@@ -8,6 +8,10 @@ The banking agent is the test subject. The evaluation workflow is the product.
 
 - Responsive shadcn/ui dashboard with a focused release-readiness view
 - Persistent dark and light modes, with dark mode as the default
+- Side-by-side support-agent playground and execution inspector
+- Visible, versioned system prompt with structured intent and tool traces
+- Synthetic payment, ATM, fraud, authorization, and general-support routes
+- Convex-backed trace capture capped to the 50 most recent sandbox runs
 - Evaluation run comparison
 - Golden test-case browser
 - Support-message review queue
@@ -63,7 +67,8 @@ This project uses synthetic data. It does not move money, make lending decisions
 ## Roadmap
 
 - Add a 200-case synthetic golden dataset
-- Add a trace importer for a sample banking agent
+- Connect playground traces to the deterministic evaluation runner
+- Add a trace importer for external banking agents
 - Add release comparisons and failure drill-downs
 - Add PII redaction before support-message review
 - Add multilingual and code-mixed banking cases

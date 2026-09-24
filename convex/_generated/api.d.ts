@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as agentPlayground from "../agentPlayground.js";
 import type * as evaluationCases from "../evaluationCases.js";
 import type * as evaluationRuns from "../evaluationRuns.js";
 import type * as seed from "../seed.js";
@@ -20,6 +21,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  agentPlayground: typeof agentPlayground;
   evaluationCases: typeof evaluationCases;
   evaluationRuns: typeof evaluationRuns;
   seed: typeof seed;

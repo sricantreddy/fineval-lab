@@ -24,6 +24,14 @@ FinEval Lab gives product and engineering teams a repeatable release gate. Each 
 5. Run deterministic intent and tool-selection checks in CI.
 6. Deploy the interface through Vercel or Netlify.
 
+## Agent playground
+
+The playground provides a synthetic support chat beside a structured agent inspector. A user can enter a message or select a sample prompt. The Convex backend scores supported intents, selects a synthetic tool, records its result, composes a grounded response, and stores the execution trace.
+
+The inspector exposes the versioned system prompt, candidate intent scores, selected intent, selected tool, tool input, tool result, backend timing, client round-trip timing, and nine named execution stages. It does not expose private model chain-of-thought. The trace contains concise decision summaries that product and engineering teams can audit.
+
+The first routes cover failed payments, ATM cash-withdrawal disputes, unrecognized transactions, unauthorized third-party data requests, and a general-support fallback. The sandbox uses synthetic records and never connects to real banking data.
+
 ## Support improvement loop
 
 1. Import a support message and its trace.
@@ -52,3 +60,4 @@ Automatic promotion is deliberately excluded. A production failure may contain i
 - Loan decisions
 - Investment advice
 - Automated production deployment based only on evaluation scores
+- A production language model or real banking tool connection

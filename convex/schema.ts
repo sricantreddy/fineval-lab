@@ -33,4 +33,23 @@ export default defineSchema({
     avgCostUsd: v.number(),
     createdAt: v.number(),
   }).index("by_created_at", ["createdAt"]),
+
+  agentTraces: defineTable({
+    message: v.string(),
+    promptVersion: v.string(),
+    candidateIntents: v.array(v.object({ intent: v.string(), score: v.number(), signal: v.string() })),
+    selectedIntent: v.string(),
+    selectedTool: v.union(v.string(), v.null()),
+    toolInput: v.string(),
+    toolResult: v.string(),
+    response: v.string(),
+    steps: v.array(v.object({
+      order: v.number(),
+      name: v.string(),
+      summary: v.string(),
+      status: v.union(v.literal("completed"), v.literal("skipped")),
+    })),
+    backendLatencyMs: v.number(),
+    createdAt: v.number(),
+  }).index("by_created_at", ["createdAt"]),
 });

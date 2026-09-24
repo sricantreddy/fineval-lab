@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
-import { Activity, ArrowRight, CheckCircle2, CircleDollarSign, Clock3, FlaskConical, Inbox, LayoutDashboard, ListChecks, Moon, ShieldCheck, Sparkles, Sun, TrendingUp } from "lucide-react";
+import { Activity, ArrowRight, CheckCircle2, CircleDollarSign, Clock3, FlaskConical, Inbox, LayoutDashboard, ListChecks, MessageSquareText, Moon, ShieldCheck, Sparkles, Sun, TrendingUp } from "lucide-react";
+import { AgentPlayground } from "@/components/AgentPlayground";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,11 +11,12 @@ import { passRate } from "@/domain/evaluator";
 import type { CandidateStatus, EvaluationCase, EvaluationRun, RiskLevel, SupportMessage } from "@/domain/types";
 import { cn } from "@/lib/utils";
 
-type View = "overview" | "cases" | "support" | "runs";
+type View = "overview" | "playground" | "cases" | "support" | "runs";
 type Theme = "dark" | "light";
 
 const navigation: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "playground", label: "Playground", icon: MessageSquareText },
   { id: "cases", label: "Test cases", icon: ListChecks },
   { id: "support", label: "Support feed", icon: Inbox },
   { id: "runs", label: "Runs", icon: Activity },
@@ -22,6 +24,7 @@ const navigation: { id: View; label: string; icon: typeof LayoutDashboard }[] = 
 
 const viewCopy: Record<Exclude<View, "overview">, { eyebrow: string; title: string; description: string }> = {
   cases: { eyebrow: "Regression suite", title: "Cases worth running every time.", description: "Normal, ambiguous, authorization, and fraud scenarios with deterministic expectations." },
+  playground: { eyebrow: "Agent sandbox", title: "Talk to the agent. Inspect every step.", description: "Run a synthetic support request and inspect its decision trace." },
   support: { eyebrow: "Product feedback loop", title: "Turn failures into permanent tests.", description: "Review recurring support patterns before adding them to the regression suite." },
   runs: { eyebrow: "Release history", title: "See what changed between versions.", description: "Compare correctness, safety, latency, and cost before an agent reaches customers." },
 };
@@ -106,7 +109,7 @@ export function App() {
             <Button size="icon" variant="ghost" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`} title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}>
               {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </Button>
-            <Button size="sm" onClick={() => setView("runs")}>Latest run <ArrowRight className="size-3.5" /></Button>
+            <Button size="sm" onClick={() => setView("playground")}>Try agent <ArrowRight className="size-3.5" /></Button>
           </div>
         </div>
         <nav className="flex gap-1 overflow-x-auto border-t border-border px-4 py-2 md:hidden">
@@ -115,7 +118,7 @@ export function App() {
       </header>
 
       <main className="mx-auto max-w-[1440px] px-5 pb-20 pt-10 lg:px-8 lg:pt-16">
-        {view === "overview" ? <Overview metrics={metrics} messages={messages} runs={runs} latestRun={latestRun} onPromote={promoteMessage} onNavigate={setView} /> : <><PageIntro {...viewCopy[view]} />{view === "support" ? <SupportFeed messages={messages} onPromote={promoteMessage} /> : view === "cases" ? <Cases cases={cases} /> : <Runs runs={runs} />}</>}
+        {view === "overview" ? <Overview metrics={metrics} messages={messages} runs={runs} latestRun={latestRun} onPromote={promoteMessage} onNavigate={setView} /> : view === "playground" ? <AgentPlayground /> : <><PageIntro {...viewCopy[view]} />{view === "support" ? <SupportFeed messages={messages} onPromote={promoteMessage} /> : view === "cases" ? <Cases cases={cases} /> : <Runs runs={runs} />}</>}
       </main>
     </div>
   );
@@ -131,7 +134,7 @@ function Overview({ metrics, messages, runs, latestRun, onPromote, onNavigate }:
       <button onClick={() => onNavigate("support")} className="mb-7 inline-flex items-center gap-2 rounded-full border border-border bg-muted/60 px-3.5 py-1.5 text-xs text-foreground/80 transition hover:bg-muted">Support-led evaluation <ArrowRight className="size-3" /></button>
       <h1 className="text-5xl font-semibold leading-[0.98] tracking-[-0.055em] sm:text-6xl lg:text-7xl">Measure every banking agent before release.</h1>
       <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">Run the same high-risk, authorization, and tool-use cases against every version. Turn real support failures into reviewed regression tests.</p>
-      <div className="mt-8 flex flex-wrap justify-center gap-3"><Button onClick={() => onNavigate("runs")}>Inspect latest run <ArrowRight className="size-4" /></Button><Button variant="outline" onClick={() => onNavigate("cases")}>Browse test suite</Button></div>
+      <div className="mt-8 flex flex-wrap justify-center gap-3"><Button onClick={() => onNavigate("playground")}>Open agent playground <ArrowRight className="size-4" /></Button><Button variant="outline" onClick={() => onNavigate("cases")}>Browse test suite</Button></div>
     </section>
 
     <section className="grid gap-5 lg:grid-cols-12">
