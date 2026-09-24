@@ -47,7 +47,7 @@ The inspector shows observable decisions and execution data. It does not display
 
 ### Connected agent provider
 
-The connected-agent action reads `AGENT_API_KEY`, `AGENT_MODEL`, `AGENT_API_BASE_URL`, and `AGENT_PROVIDER` from Convex environment variables. The browser receives only connection status and non-secret model metadata. The action asks the model for a structured intent and tool decision, validates both against a fixed inventory, runs a synthetic tool, and asks the model to summarize that result. The trace records the provider, model, prompt version, and dataset version.
+The connected-agent action reads `AGENT_API_KEY`, `AGENT_MODEL`, `AGENT_API_BASE_URL`, and `AGENT_PROVIDER` from Convex environment variables. The browser receives only a boolean connection state before a run. Provider setup lives in repository documentation, not the public application. The action asks the model for a structured intent and tool decision, validates both against a fixed inventory, runs a synthetic tool, and asks the model to summarize that result. The completed trace records the provider, model, prompt version, and dataset version for evaluation.
 
 The current adapter supports HTTPS endpoints that implement the OpenAI chat-completions format. It cannot call real banking systems. Authentication and authorization must stay in a separate tool gateway before any real integration is added.
 

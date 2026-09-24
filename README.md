@@ -13,7 +13,6 @@ The banking agent is the test subject. The evaluation workflow is the product.
 - Synthetic payment, ATM, fraud, authorization, and general-support routes
 - Convex-backed trace capture capped to the 50 most recent sandbox runs
 - Secure OpenAI-compatible agent adapter with secrets kept in Convex environment variables
-- In-app Agent setup screen with connection status and version history
 - Versioned 75-case golden dataset covering five banking-support intent families
 - Trace metadata for provider, model, prompt version, and dataset version
 - One-click deterministic evaluation with case-level results stored in Convex
@@ -51,9 +50,11 @@ npx convex dev
 npx convex run goldenDataset:seed
 ```
 
-## Connect an agent API
+## Configure an agent after cloning
 
-Open the Convex dashboard for the development or production deployment, then add these environment variables under **Settings → Environment Variables**:
+Provider setup is intentionally absent from the deployed FinEval Lab UI. Each person who clones the repository must connect their own provider to their own Convex deployment.
+
+Set these variables through the Convex CLI or in the private Convex dashboard under **Settings → Environment Variables**:
 
 ```text
 AGENT_API_KEY=<provider secret>
@@ -63,6 +64,25 @@ AGENT_PROVIDER=OpenAI
 ```
 
 `AGENT_API_BASE_URL` can point to any HTTPS service that implements the OpenAI chat-completions format. Add the values separately to development and production. Never add an API key to `.env`, the browser, Convex tables, Vercel public variables, or GitHub.
+
+For a Gemini key created in Google AI Studio, use:
+
+```text
+AGENT_API_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
+AGENT_PROVIDER=Google AI Studio
+AGENT_MODEL=<the Gemini model selected by the repository owner>
+```
+
+Set a secret interactively so it does not appear in shell history:
+
+```bash
+npx convex env set AGENT_API_KEY
+npx convex env set AGENT_MODEL
+npx convex env set AGENT_API_BASE_URL
+npx convex env set AGENT_PROVIDER
+```
+
+Append `--prod` to configure the production deployment. The connected-model control activates only on deployments with both `AGENT_API_KEY` and `AGENT_MODEL`.
 
 ## Product documents
 

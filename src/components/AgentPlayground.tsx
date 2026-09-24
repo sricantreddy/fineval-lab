@@ -94,7 +94,7 @@ export function AgentPlayground() {
         <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">Run a synthetic banking support request and inspect the intent scores, selected tool, tool result, final reply, and recorded trace side by side.</p>
         <div className="mt-5 flex w-fit rounded-full border border-border bg-muted/50 p-1">
           <button onClick={() => setExecutionMode("synthetic")} className={cn("flex items-center gap-2 rounded-full px-3 py-1.5 text-xs", executionMode === "synthetic" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}><Activity className="size-3.5" />Synthetic rules</button>
-          <button disabled={!providerStatus?.configured} onClick={() => setExecutionMode("connected")} className={cn("flex items-center gap-2 rounded-full px-3 py-1.5 text-xs", executionMode === "connected" ? "bg-primary text-primary-foreground" : "text-muted-foreground", !providerStatus?.configured && "cursor-not-allowed opacity-45")} title={providerStatus?.configured ? "Use the connected model" : "Configure the provider in Agent setup"}><Cpu className="size-3.5" />Connected model</button>
+          <button disabled={!providerStatus?.configured} onClick={() => setExecutionMode("connected")} className={cn("flex items-center gap-2 rounded-full px-3 py-1.5 text-xs", executionMode === "connected" ? "bg-primary text-primary-foreground" : "text-muted-foreground", !providerStatus?.configured && "cursor-not-allowed opacity-45")} title={providerStatus?.configured ? "Use the connected model" : "This deployment has no connected model"}><Cpu className="size-3.5" />Connected model</button>
         </div>
       </section>
 
@@ -102,7 +102,7 @@ export function AgentPlayground() {
         <Card className="flex min-h-[720px] flex-col overflow-hidden">
           <CardHeader className="border-b border-border">
             <div className="flex items-start justify-between gap-4">
-              <div><CardTitle>FinSupport sandbox</CardTitle><CardDescription>Synthetic records only. {executionMode === "connected" ? `${providerStatus?.provider} · ${providerStatus?.model}` : "Deterministic agent"}</CardDescription></div>
+              <div><CardTitle>FinSupport sandbox</CardTitle><CardDescription>Synthetic records only. {executionMode === "connected" ? "Connected API" : "Deterministic agent"}</CardDescription></div>
               <Badge variant="secondary"><span className="mr-1.5 size-1.5 rounded-full bg-current" />{executionMode === "connected" ? "API connected" : "Online"}</Badge>
             </div>
           </CardHeader>

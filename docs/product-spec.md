@@ -34,7 +34,7 @@ The first routes cover failed payments, ATM cash-withdrawal disputes, unrecogniz
 
 ## Agent configuration and versions
 
-The Agent setup screen tells a project owner where to add an OpenAI-compatible API. Secrets live only in Convex environment variables. Once configured, the playground can switch between the deterministic baseline and the connected model.
+Provider configuration is a repository-owner task, not a public product screen. A person who clones the project adds an OpenAI-compatible API to their own Convex environment variables. Once configured, the playground can switch between the deterministic baseline and the connected model. The deployed UI exposes only a boolean connection state and never links to the Convex dashboard.
 
 Every stored trace identifies the provider, model, system-prompt version, and golden-dataset version. An agent-version record keeps the complete prompt text beside those identifiers, which makes later comparisons reproducible.
 

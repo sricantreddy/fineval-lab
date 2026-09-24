@@ -16,9 +16,11 @@ npx convex run seed:demoData
 npx convex run goldenDataset:seed
 ```
 
-## 2. Connect an agent provider
+## 2. Connect an agent provider after cloning
 
-Open the target deployment in the Convex dashboard and add these values under **Settings → Environment Variables**:
+The public application has no provider-setup page or Convex dashboard link. The repository owner configures each deployment privately through the Convex CLI or Convex dashboard.
+
+Add these values under **Settings → Environment Variables**:
 
 ```text
 AGENT_API_KEY=<provider secret>
@@ -27,7 +29,26 @@ AGENT_API_BASE_URL=https://api.openai.com/v1
 AGENT_PROVIDER=OpenAI
 ```
 
-The adapter accepts an HTTPS OpenAI-compatible chat-completions endpoint. Configure development and production separately. The UI receives only a configured status plus the provider and model names. It never receives the key.
+The adapter accepts an HTTPS OpenAI-compatible chat-completions endpoint. Configure development and production separately. Before a run, the UI receives only a configured-or-not status. It never receives the key.
+
+Google AI Studio keys work through Gemini's OpenAI-compatible endpoint:
+
+```text
+AGENT_API_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
+AGENT_PROVIDER=Google AI Studio
+AGENT_MODEL=<selected Gemini model>
+```
+
+The CLI can prompt for each value without putting the key in a committed file:
+
+```bash
+npx convex env set AGENT_API_KEY
+npx convex env set AGENT_MODEL
+npx convex env set AGENT_API_BASE_URL
+npx convex env set AGENT_PROVIDER
+```
+
+Use the same commands with `--prod` for production.
 
 ## 3. Connect GitHub
 

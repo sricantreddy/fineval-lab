@@ -2,9 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
-import { Activity, ArrowRight, CheckCircle2, CircleDollarSign, Clock3, FlaskConical, Inbox, KeyRound, LayoutDashboard, ListChecks, MessageSquareText, Moon, Play, ShieldCheck, Sparkles, Sun, TrendingUp } from "lucide-react";
+import { Activity, ArrowRight, CheckCircle2, CircleDollarSign, Clock3, FlaskConical, Inbox, LayoutDashboard, ListChecks, MessageSquareText, Moon, Play, ShieldCheck, Sparkles, Sun, TrendingUp } from "lucide-react";
 import { AgentPlayground } from "@/components/AgentPlayground";
-import { AgentSetup } from "@/components/AgentSetup";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +11,7 @@ import { passRate } from "@/domain/evaluator";
 import type { CandidateStatus, EvaluationCase, EvaluationRun, RiskLevel, SupportMessage } from "@/domain/types";
 import { cn } from "@/lib/utils";
 
-type View = "overview" | "playground" | "cases" | "support" | "runs" | "setup";
+type View = "overview" | "playground" | "cases" | "support" | "runs";
 type Theme = "dark" | "light";
 
 const navigation: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
@@ -21,7 +20,6 @@ const navigation: { id: View; label: string; icon: typeof LayoutDashboard }[] = 
   { id: "cases", label: "Test cases", icon: ListChecks },
   { id: "support", label: "Support feed", icon: Inbox },
   { id: "runs", label: "Runs", icon: Activity },
-  { id: "setup", label: "Agent setup", icon: KeyRound },
 ];
 
 const viewCopy: Record<Exclude<View, "overview">, { eyebrow: string; title: string; description: string }> = {
@@ -29,7 +27,6 @@ const viewCopy: Record<Exclude<View, "overview">, { eyebrow: string; title: stri
   playground: { eyebrow: "Agent sandbox", title: "Talk to the agent. Inspect every step.", description: "Run a synthetic support request and inspect its decision trace." },
   support: { eyebrow: "Product feedback loop", title: "Turn failures into permanent tests.", description: "Review recurring support patterns before adding them to the regression suite." },
   runs: { eyebrow: "Release history", title: "See what changed between versions.", description: "Compare correctness, safety, latency, and cost before an agent reaches customers." },
-  setup: { eyebrow: "Agent configuration", title: "Connect the model. Keep the key private.", description: "Configure an OpenAI-compatible agent API and inspect the versions used in evaluation." },
 };
 
 function riskVariant(risk: RiskLevel) {
@@ -125,7 +122,7 @@ export function App() {
       </header>
 
       <main className="mx-auto max-w-[1440px] px-5 pb-20 pt-10 lg:px-8 lg:pt-16">
-        {view === "overview" ? <Overview metrics={metrics} messages={messages} runs={runs} latestRun={latestRun} onPromote={promoteMessage} onNavigate={setView} /> : view === "playground" ? <AgentPlayground /> : <><PageIntro {...viewCopy[view]} />{view === "support" ? <SupportFeed messages={messages} onPromote={promoteMessage} /> : view === "cases" ? <Cases cases={cases} /> : view === "setup" ? <AgentSetup /> : <Runs runs={runs} />}</>}
+        {view === "overview" ? <Overview metrics={metrics} messages={messages} runs={runs} latestRun={latestRun} onPromote={promoteMessage} onNavigate={setView} /> : view === "playground" ? <AgentPlayground /> : <><PageIntro {...viewCopy[view]} />{view === "support" ? <SupportFeed messages={messages} onPromote={promoteMessage} /> : view === "cases" ? <Cases cases={cases} /> : <Runs runs={runs} />}</>}
       </main>
     </div>
   );
