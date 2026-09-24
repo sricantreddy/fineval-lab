@@ -6,9 +6,9 @@ const badgeVariants = cva("inline-flex items-center rounded-full border px-2.5 p
   variants: {
     variant: {
       default: "border-border bg-primary text-primary-foreground",
-      success: "border-emerald-400/15 bg-emerald-400/10 text-emerald-300",
-      warning: "border-amber-400/15 bg-amber-400/10 text-amber-300",
-      danger: "border-red-400/15 bg-red-400/10 text-red-300",
+      success: "border-primary bg-primary text-primary-foreground",
+      warning: "border-border bg-muted text-foreground",
+      danger: "border-foreground/25 bg-background text-foreground",
       secondary: "border-border bg-muted text-foreground/80",
     },
   },
