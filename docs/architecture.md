@@ -12,7 +12,7 @@ flowchart LR
     G --> I[Convex evaluation runs]
     H --> I
     I --> J[React and shadcn dashboard]
-    J --> K[Vercel or Netlify]
+    J --> K[Vercel]
     L[GitHub Actions] --> M[Test and build gate]
     M --> K
 ```
@@ -21,7 +21,7 @@ flowchart LR
 
 ### Web application
 
-React, TypeScript, Vite, Tailwind CSS, and shadcn/ui default styling. `ConvexProvider` maintains the live connection, while reactive queries update evaluation runs, test cases, and support messages without polling.
+React, TypeScript, Vite, Tailwind CSS, and shadcn/ui primitives. The interface uses a neutral dark theme, a compact top navigation, and a responsive card grid that keeps release readiness prominent. `ConvexProvider` maintains the live connection, while reactive queries update evaluation runs, test cases, and support messages without polling.
 
 ### Convex backend
 
@@ -33,7 +33,7 @@ Pure TypeScript functions check expected intents, required tools, and forbidden 
 
 ### Delivery
 
-GitHub Actions runs tests and a production build on every pull request and push to `main`. Vercel or Netlify can deploy after GitHub reports success. Convex deploys separately using its deployment key.
+GitHub Actions runs tests and a production build on every pull request and push to `main`. Vercel deploys the web application from GitHub after the quality gate passes. Convex deploys separately using its deployment key.
 
 ### Development workflow
 

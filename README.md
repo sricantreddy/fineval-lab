@@ -6,7 +6,7 @@ The banking agent is the test subject. The evaluation workflow is the product.
 
 ## Current first slice
 
-- Responsive shadcn/ui dashboard
+- Responsive, dark shadcn/ui dashboard with a focused release-readiness view
 - Evaluation run comparison
 - Golden test-case browser
 - Support-message review queue
@@ -16,7 +16,7 @@ The banking agent is the test subject. The evaluation workflow is the product.
 - Live Convex queries and support-message promotion mutations
 - Idempotent synthetic-data seed
 - GitHub Actions test and build gate
-- Vercel and Netlify configuration
+- Vercel deployment configuration
 
 The development environment is connected to a Convex cloud deployment. The included seed uses synthetic banking scenarios only.
 
@@ -52,7 +52,7 @@ npx convex dev
 - shadcn/ui default style and Tailwind CSS
 - Convex backend
 - GitHub Actions CI
-- Vercel or Netlify hosting
+- Vercel hosting
 - Codex-assisted development workflow
 
 ## Safety boundary
