@@ -9,6 +9,12 @@ npx convex dev
 
 The command creates a Convex deployment, writes `VITE_CONVEX_URL` to `.env.local`, and generates the typed files under `convex/_generated`.
 
+Seed a new empty development deployment with synthetic records:
+
+```bash
+npx convex run seed:demoData
+```
+
 ## 2. Connect GitHub
 
 Create a GitHub repository and push this project. The included workflow runs tests and builds the application on pull requests and pushes to `main`.

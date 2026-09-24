@@ -21,11 +21,11 @@ flowchart LR
 
 ### Web application
 
-React, TypeScript, Vite, Tailwind CSS, and shadcn/ui default styling. The current demo uses local fixture data, so it deploys before a Convex project is configured.
+React, TypeScript, Vite, Tailwind CSS, and shadcn/ui default styling. `ConvexProvider` maintains the live connection, while reactive queries update evaluation runs, test cases, and support messages without polling.
 
 ### Convex backend
 
-Convex stores support messages, approved evaluation cases, and evaluation run summaries. Mutations implement the reviewed support-message promotion flow.
+Convex stores support messages, approved evaluation cases, and evaluation run summaries. A reviewed promotion mutation creates a regression case and updates the source message in one transaction. The seed function inserts synthetic starter data only when the deployment is empty.
 
 ### Evaluation engine
 

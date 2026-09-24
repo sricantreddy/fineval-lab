@@ -13,10 +13,12 @@ The banking agent is the test subject. The evaluation workflow is the product.
 - Human-approved conversion of support failures into regression cases
 - Deterministic TypeScript evaluator with tests
 - Convex schema and server functions
+- Live Convex queries and support-message promotion mutations
+- Idempotent synthetic-data seed
 - GitHub Actions test and build gate
 - Vercel and Netlify configuration
 
-The interface uses demo data until a Convex project is connected.
+The development environment is connected to a Convex cloud deployment. The included seed uses synthetic banking scenarios only.
 
 ## Run locally
 
@@ -32,7 +34,7 @@ npm test
 npm run build
 ```
 
-Connect Convex:
+Connect a new local checkout to Convex:
 
 ```bash
 npx convex dev
@@ -59,7 +61,6 @@ This project uses synthetic data. It does not move money, make lending decisions
 
 ## Roadmap
 
-- Connect the UI to Convex queries and mutations
 - Add a 200-case synthetic golden dataset
 - Add a trace importer for a sample banking agent
 - Add release comparisons and failure drill-downs

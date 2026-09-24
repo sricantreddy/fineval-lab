@@ -1,4 +1,7 @@
 import { useMemo, useState } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
 import {
   Activity,
   ArrowRight,
@@ -19,9 +22,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { demoCases, demoRuns, demoSupportMessages } from "@/data/demo";
 import { passRate } from "@/domain/evaluator";
-import type { CandidateStatus, RiskLevel, SupportMessage } from "@/domain/types";
+import type { CandidateStatus, EvaluationCase, EvaluationRun, RiskLevel, SupportMessage } from "@/domain/types";
 import { cn } from "@/lib/utils";
 
 type View = "overview" | "cases" | "support" | "runs";
@@ -51,8 +53,40 @@ function statusLabel(status: CandidateStatus) {
 export function App() {
   const [view, setView] = useState<View>("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [messages, setMessages] = useState<SupportMessage[]>(demoSupportMessages);
-  const latestRun = demoRuns[0];
+  const supportDocuments = useQuery(api.supportMessages.list);
+  const runDocuments = useQuery(api.evaluationRuns.list);
+  const caseDocuments = useQuery(api.evaluationCases.list);
+  const promoteSupportMessage = useMutation(api.supportMessages.promoteToEvaluationCase);
+
+  const messages: SupportMessage[] = (supportDocuments ?? []).map((message) => ({
+    id: message._id,
+    message: message.message,
+    intent: message.intent,
+    risk: message.risk,
+    failurePattern: message.failurePattern,
+    status: message.status,
+  }));
+  const runs: EvaluationRun[] = (runDocuments ?? []).map((run) => ({
+    id: run._id,
+    version: run.version,
+    createdAt: new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(run.createdAt),
+    totalCases: run.totalCases,
+    passedCases: run.passedCases,
+    safetyViolations: run.safetyViolations,
+    avgLatencyMs: run.avgLatencyMs,
+    avgCostUsd: run.avgCostUsd,
+  }));
+  const cases: EvaluationCase[] = (caseDocuments ?? []).map((testCase) => ({
+    id: testCase.caseId,
+    name: testCase.name,
+    message: testCase.message,
+    expectedIntent: testCase.expectedIntent,
+    expectedTool: testCase.expectedTool,
+    forbiddenTools: testCase.forbiddenTools,
+    risk: testCase.risk,
+  }));
+  const isLoading = supportDocuments === undefined || runDocuments === undefined || caseDocuments === undefined;
+  const latestRun = runs[0] ?? { id: "loading", version: "Loading", createdAt: "", totalCases: 0, passedCases: 0, safetyViolations: 0, avgLatencyMs: 0, avgCostUsd: 0 };
   const candidateCount = messages.filter((message) => message.status !== "promoted").length;
   const promotedCount = messages.filter((message) => message.status === "promoted").length;
 
@@ -66,8 +100,23 @@ export function App() {
     [candidateCount, latestRun, promotedCount],
   );
 
-  function promoteMessage(id: string) {
-    setMessages((current) => current.map((message) => message.id === id ? { ...message, status: "promoted" } : message));
+  async function promoteMessage(id: string) {
+    const message = messages.find((item) => item.id === id);
+    if (!message) return;
+    const toolByIntent: Record<string, string | null> = {
+      payment_failure: "get_transaction_status",
+      unauthorized_data_request: null,
+      unrecognized_transaction: "create_support_ticket",
+      cash_withdrawal_dispute: "create_support_ticket",
+    };
+    await promoteSupportMessage({
+      messageId: id as Id<"supportMessages">,
+      caseId: `SUP-${Date.now().toString().slice(-6)}`,
+      name: `Support regression: ${message.intent.replaceAll("_", " ")}`,
+      expectedIntent: message.intent,
+      expectedTool: toolByIntent[message.intent] ?? "create_support_ticket",
+      forbiddenTools: message.intent === "unauthorized_data_request" ? ["get_recent_transactions"] : ["create_refund"],
+    });
   }
 
   return (
@@ -91,7 +140,7 @@ export function App() {
           </nav>
           <div className="absolute bottom-5 left-4 right-4 rounded-lg border border-sidebar-border bg-background/70 p-3">
             <p className="text-xs font-medium">Environment</p>
-            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><span className="size-2 rounded-full bg-emerald-500" />Demo data, ready for Convex</div>
+            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><span className={cn("size-2 rounded-full", isLoading ? "bg-amber-500" : "bg-emerald-500")} />{isLoading ? "Connecting to Convex" : "Live Convex sync"}</div>
           </div>
         </aside>
 
@@ -108,13 +157,13 @@ export function App() {
 
           <div className="mx-auto max-w-7xl p-4 md:p-8">
             {view === "overview" ? (
-              <Overview metrics={metrics} messages={messages} onPromote={promoteMessage} />
+              <Overview metrics={metrics} messages={messages} runs={runs} onPromote={promoteMessage} />
             ) : view === "support" ? (
               <SupportFeed messages={messages} onPromote={promoteMessage} />
             ) : view === "cases" ? (
-              <Cases />
+              <Cases cases={cases} />
             ) : (
-              <Runs />
+              <Runs runs={runs} />
             )}
           </div>
         </main>
@@ -123,13 +172,13 @@ export function App() {
   );
 }
 
-function Overview({ metrics, messages, onPromote }: { metrics: { label: string; value: string; note: string; icon: typeof Activity; tone: string }[]; messages: SupportMessage[]; onPromote: (id: string) => void }) {
+function Overview({ metrics, messages, runs, onPromote }: { metrics: { label: string; value: string; note: string; icon: typeof Activity; tone: string }[]; messages: SupportMessage[]; runs: EvaluationRun[]; onPromote: (id: string) => void }) {
   return <div className="space-y-6">
     <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {metrics.map((metric) => <Card key={metric.label}><CardContent className="flex items-start justify-between pt-5"><div><p className="text-sm text-muted-foreground">{metric.label}</p><p className="mt-2 text-3xl font-semibold tracking-tight">{metric.value}</p><p className="mt-1 text-xs text-muted-foreground">{metric.note}</p></div><span className={cn("rounded-lg bg-muted p-2.5", metric.tone)}><metric.icon className="size-5" /></span></CardContent></Card>)}
     </section>
     <section className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-      <RunTable compact />
+      <RunTable runs={runs} compact />
       <Card>
         <CardHeader><CardTitle>Release gate</CardTitle><CardDescription>agent-v0.4.2 compared with the current production version</CardDescription></CardHeader>
         <CardContent className="space-y-4">
@@ -154,14 +203,15 @@ function SupportRow({ message, onPromote }: { message: SupportMessage; onPromote
   return <div className="grid gap-4 rounded-lg border border-border p-4 lg:grid-cols-[1.3fr_1fr_auto] lg:items-center"><div><div className="mb-2 flex flex-wrap items-center gap-2"><Badge variant={riskVariant(message.risk)}>{message.risk} risk</Badge><span className="text-xs text-muted-foreground">{message.intent}</span></div><p className="text-sm font-medium leading-6">“{message.message}”</p></div><div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Observed failure</p><p className="mt-1 text-sm leading-5 text-muted-foreground">{message.failurePattern}</p></div>{message.status === "promoted" ? <Badge variant="success"><CheckCircle2 className="mr-1 size-3" />{statusLabel(message.status)}</Badge> : <Button size="sm" variant="outline" onClick={() => onPromote(message.id)}>Create test case<ArrowRight className="size-3.5" /></Button>}</div>;
 }
 
-function Cases() {
-  return <Card><CardHeader><CardTitle>Golden test suite</CardTitle><CardDescription>{demoCases.length} starter cases are shown. The first milestone expands this to 200.</CardDescription></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="border-b text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="pb-3 font-medium">Case</th><th className="pb-3 font-medium">Expected intent</th><th className="pb-3 font-medium">Expected tool</th><th className="pb-3 font-medium">Risk</th></tr></thead><tbody>{demoCases.map((item) => <tr key={item.id} className="border-b last:border-0"><td className="py-4"><p className="font-medium">{item.name}</p><p className="mt-1 max-w-md text-xs text-muted-foreground">{item.message}</p></td><td className="py-4 font-mono text-xs">{item.expectedIntent}</td><td className="py-4 font-mono text-xs">{item.expectedTool ?? "No tool call"}</td><td className="py-4"><Badge variant={riskVariant(item.risk)}>{item.risk}</Badge></td></tr>)}</tbody></table></CardContent></Card>;
+function Cases({ cases }: { cases: EvaluationCase[] }) {
+  return <Card><CardHeader><CardTitle>Golden test suite</CardTitle><CardDescription>{cases.length} starter cases are shown. The first milestone expands this to 200.</CardDescription></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="border-b text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="pb-3 font-medium">Case</th><th className="pb-3 font-medium">Expected intent</th><th className="pb-3 font-medium">Expected tool</th><th className="pb-3 font-medium">Risk</th></tr></thead><tbody>{cases.map((item) => <tr key={item.id} className="border-b last:border-0"><td className="py-4"><p className="font-medium">{item.name}</p><p className="mt-1 max-w-md text-xs text-muted-foreground">{item.message}</p></td><td className="py-4 font-mono text-xs">{item.expectedIntent}</td><td className="py-4 font-mono text-xs">{item.expectedTool ?? "No tool call"}</td><td className="py-4"><Badge variant={riskVariant(item.risk)}>{item.risk}</Badge></td></tr>)}</tbody></table></CardContent></Card>;
 }
 
-function RunTable({ compact = false }: { compact?: boolean }) {
-  return <Card><CardHeader><CardTitle>Recent evaluation runs</CardTitle><CardDescription>Regression results for the latest agent versions.</CardDescription></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[620px] text-left text-sm"><thead className="border-b text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="pb-3 font-medium">Version</th><th className="pb-3 font-medium">Pass rate</th><th className="pb-3 font-medium">Safety</th><th className="pb-3 font-medium">Latency</th>{!compact ? <th className="pb-3 font-medium">Cost</th> : null}</tr></thead><tbody>{demoRuns.map((run) => <tr key={run.id} className="border-b last:border-0"><td className="py-4"><p className="font-medium">{run.version}</p><p className="text-xs text-muted-foreground">{run.createdAt}</p></td><td className="py-4 font-medium">{passRate(run)}%</td><td className="py-4"><Badge variant={run.safetyViolations === 0 ? "success" : "danger"}>{run.safetyViolations === 0 ? "Passed" : `${run.safetyViolations} failed`}</Badge></td><td className="py-4">{(run.avgLatencyMs / 1000).toFixed(2)}s</td>{!compact ? <td className="py-4">${run.avgCostUsd.toFixed(3)}</td> : null}</tr>)}</tbody></table></CardContent></Card>;
+function RunTable({ runs, compact = false }: { runs: EvaluationRun[]; compact?: boolean }) {
+  return <Card><CardHeader><CardTitle>Recent evaluation runs</CardTitle><CardDescription>Regression results for the latest agent versions.</CardDescription></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[620px] text-left text-sm"><thead className="border-b text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="pb-3 font-medium">Version</th><th className="pb-3 font-medium">Pass rate</th><th className="pb-3 font-medium">Safety</th><th className="pb-3 font-medium">Latency</th>{!compact ? <th className="pb-3 font-medium">Cost</th> : null}</tr></thead><tbody>{runs.map((run) => <tr key={run.id} className="border-b last:border-0"><td className="py-4"><p className="font-medium">{run.version}</p><p className="text-xs text-muted-foreground">{run.createdAt}</p></td><td className="py-4 font-medium">{passRate(run)}%</td><td className="py-4"><Badge variant={run.safetyViolations === 0 ? "success" : "danger"}>{run.safetyViolations === 0 ? "Passed" : `${run.safetyViolations} failed`}</Badge></td><td className="py-4">{(run.avgLatencyMs / 1000).toFixed(2)}s</td>{!compact ? <td className="py-4">${run.avgCostUsd.toFixed(3)}</td> : null}</tr>)}</tbody></table></CardContent></Card>;
 }
 
-function Runs() {
-  return <div className="space-y-6"><RunTable /><div className="grid gap-4 md:grid-cols-2"><Card><CardContent className="flex items-center gap-4 pt-5"><span className="rounded-lg bg-blue-50 p-3 text-blue-700"><CircleDollarSign className="size-5" /></span><div><p className="text-sm text-muted-foreground">Estimated cost for latest run</p><p className="text-xl font-semibold">${(demoRuns[0].avgCostUsd * demoRuns[0].totalCases).toFixed(2)}</p></div></CardContent></Card><Card><CardContent className="flex items-center gap-4 pt-5"><span className="rounded-lg bg-emerald-50 p-3 text-emerald-700"><ShieldCheck className="size-5" /></span><div><p className="text-sm text-muted-foreground">High-risk cases passed</p><p className="text-xl font-semibold">100%</p></div></CardContent></Card></div></div>;
+function Runs({ runs }: { runs: EvaluationRun[] }) {
+  const latestRun = runs[0];
+  return <div className="space-y-6"><RunTable runs={runs} /><div className="grid gap-4 md:grid-cols-2"><Card><CardContent className="flex items-center gap-4 pt-5"><span className="rounded-lg bg-blue-50 p-3 text-blue-700"><CircleDollarSign className="size-5" /></span><div><p className="text-sm text-muted-foreground">Estimated cost for latest run</p><p className="text-xl font-semibold">${latestRun ? (latestRun.avgCostUsd * latestRun.totalCases).toFixed(2) : "0.00"}</p></div></CardContent></Card><Card><CardContent className="flex items-center gap-4 pt-5"><span className="rounded-lg bg-emerald-50 p-3 text-emerald-700"><ShieldCheck className="size-5" /></span><div><p className="text-sm text-muted-foreground">High-risk cases passed</p><p className="text-xl font-semibold">100%</p></div></CardContent></Card></div></div>;
 }
