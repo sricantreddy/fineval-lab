@@ -6,7 +6,8 @@ The banking agent is the test subject. The evaluation workflow is the product.
 
 ## Current first slice
 
-- Responsive, dark shadcn/ui dashboard with a focused release-readiness view
+- Responsive shadcn/ui dashboard with a focused release-readiness view
+- Persistent dark and light modes, with dark mode as the default
 - Evaluation run comparison
 - Golden test-case browser
 - Support-message review queue

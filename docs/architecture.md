@@ -21,7 +21,7 @@ flowchart LR
 
 ### Web application
 
-React, TypeScript, Vite, Tailwind CSS, and shadcn/ui primitives. The interface uses a neutral dark theme, a compact top navigation, and a responsive card grid that keeps release readiness prominent. `ConvexProvider` maintains the live connection, while reactive queries update evaluation runs, test cases, and support messages without polling.
+React, TypeScript, Vite, Tailwind CSS, and shadcn/ui primitives. The interface uses a neutral dark theme by default, includes a persistent light-mode switch, and keeps release readiness prominent through a compact top navigation and responsive card grid. `ConvexProvider` maintains the live connection, while reactive queries update evaluation runs, test cases, and support messages without polling.
 
 ### Convex backend
 
