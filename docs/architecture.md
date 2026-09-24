@@ -1,0 +1,40 @@
+# Architecture
+
+```mermaid
+flowchart LR
+    A[Support messages] --> B[Convex ingestion]
+    B --> C[Human review queue]
+    C -->|Approve| D[Golden evaluation cases]
+    D --> E[TypeScript evaluation runner]
+    F[Candidate banking agent] --> E
+    E --> G[Deterministic checks]
+    E --> H[Optional model judges]
+    G --> I[Convex evaluation runs]
+    H --> I
+    I --> J[React and shadcn dashboard]
+    J --> K[Vercel or Netlify]
+    L[GitHub Actions] --> M[Test and build gate]
+    M --> K
+```
+
+## Components
+
+### Web application
+
+React, TypeScript, Vite, Tailwind CSS, and shadcn/ui default styling. The current demo uses local fixture data, so it deploys before a Convex project is configured.
+
+### Convex backend
+
+Convex stores support messages, approved evaluation cases, and evaluation run summaries. Mutations implement the reviewed support-message promotion flow.
+
+### Evaluation engine
+
+Pure TypeScript functions check expected intents, required tools, and forbidden tools. Keeping these functions outside the web and database layers makes them easy to run in GitHub Actions.
+
+### Delivery
+
+GitHub Actions runs tests and a production build on every pull request and push to `main`. Vercel or Netlify can deploy after GitHub reports success. Convex deploys separately using its deployment key.
+
+### Development workflow
+
+Codex edits the repository, runs tests, reviews changes, and helps maintain the product documents. Codex is not a runtime dependency of the deployed application.
