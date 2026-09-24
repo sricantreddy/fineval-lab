@@ -43,6 +43,10 @@ export interface SyntheticAgentRun {
   response: string;
   steps: AgentStep[];
   backendLatencyMs: number;
+  executionMode?: "synthetic" | "connected";
+  provider?: string;
+  model?: string;
+  datasetVersion?: string;
 }
 
 const intents: AgentIntent[] = [
@@ -85,14 +89,14 @@ export function scoreIntents(input: string): IntentCandidate[] {
     .sort((a, b) => b.score - a.score);
 }
 
-function toolForIntent(intent: AgentIntent) {
+export function toolForIntent(intent: AgentIntent) {
   if (intent === "payment_failure" || intent === "cash_withdrawal_dispute") return "get_transaction_status";
   if (intent === "unrecognized_transaction") return "create_support_ticket";
   if (intent === "general_support") return "search_support_policy";
   return null;
 }
 
-function executeSyntheticTool(intent: AgentIntent, tool: string | null) {
+export function executeSyntheticTool(intent: AgentIntent, tool: string | null) {
   if (tool === null) {
     return {
       input: "No tool input",
@@ -159,5 +163,8 @@ export function runSyntheticAgent(message: string, backendLatencyMs = 1): Synthe
     response: tool.response,
     steps,
     backendLatencyMs,
+    executionMode: "synthetic",
+    provider: "deterministic",
+    model: "rules-v0.1",
   };
 }

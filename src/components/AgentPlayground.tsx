@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { useMutation } from "convex/react";
-import { Activity, Bot, Check, FileCode2, Send, UserRound, Wrench } from "lucide-react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { Activity, Bot, Check, Cpu, FileCode2, Send, UserRound, Wrench } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 import { AGENT_SYSTEM_PROMPT, type SyntheticAgentRun } from "@/domain/syntheticAgent";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,8 @@ const initialConversation: ChatMessage[] = [{
 
 export function AgentPlayground() {
   const runAgent = useMutation(api.agentPlayground.run);
+  const runConnectedAgent = useAction(api.agentPlayground.runConnected);
+  const providerStatus = useQuery(api.agentVersions.providerStatus);
   const [input, setInput] = useState("");
   const [conversation, setConversation] = useState<ChatMessage[]>(initialConversation);
   const [run, setRun] = useState<PlaygroundRun | null>(null);
@@ -32,6 +34,7 @@ export function AgentPlayground() {
   const [error, setError] = useState<string | null>(null);
   const [inspector, setInspector] = useState<"trace" | "prompt">("trace");
   const [visibleSteps, setVisibleSteps] = useState(0);
+  const [executionMode, setExecutionMode] = useState<"synthetic" | "connected">("synthetic");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,7 +69,9 @@ export function AgentPlayground() {
     const startedAt = performance.now();
 
     try {
-      const result = await runAgent({ message });
+      const result = executionMode === "connected"
+        ? await runConnectedAgent({ message })
+        : await runAgent({ message });
       const nextRun: PlaygroundRun = {
         ...result,
         traceId: String(result.traceId),
@@ -87,14 +92,18 @@ export function AgentPlayground() {
         <p className="mb-4 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Agent sandbox</p>
         <h1 className="text-4xl font-semibold tracking-[-0.045em] sm:text-5xl">Talk to the agent. Inspect every step.</h1>
         <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">Run a synthetic banking support request and inspect the intent scores, selected tool, tool result, final reply, and recorded trace side by side.</p>
+        <div className="mt-5 flex w-fit rounded-full border border-border bg-muted/50 p-1">
+          <button onClick={() => setExecutionMode("synthetic")} className={cn("flex items-center gap-2 rounded-full px-3 py-1.5 text-xs", executionMode === "synthetic" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}><Activity className="size-3.5" />Synthetic rules</button>
+          <button disabled={!providerStatus?.configured} onClick={() => setExecutionMode("connected")} className={cn("flex items-center gap-2 rounded-full px-3 py-1.5 text-xs", executionMode === "connected" ? "bg-primary text-primary-foreground" : "text-muted-foreground", !providerStatus?.configured && "cursor-not-allowed opacity-45")} title={providerStatus?.configured ? "Use the connected model" : "Configure the provider in Agent setup"}><Cpu className="size-3.5" />Connected model</button>
+        </div>
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.9fr)]">
         <Card className="flex min-h-[720px] flex-col overflow-hidden">
           <CardHeader className="border-b border-border">
             <div className="flex items-start justify-between gap-4">
-              <div><CardTitle>FinSupport sandbox</CardTitle><CardDescription>Synthetic data only. No real banking actions.</CardDescription></div>
-              <Badge variant="secondary"><span className="mr-1.5 size-1.5 rounded-full bg-current" />Online</Badge>
+              <div><CardTitle>FinSupport sandbox</CardTitle><CardDescription>Synthetic records only. {executionMode === "connected" ? `${providerStatus?.provider} · ${providerStatus?.model}` : "Deterministic agent"}</CardDescription></div>
+              <Badge variant="secondary"><span className="mr-1.5 size-1.5 rounded-full bg-current" />{executionMode === "connected" ? "API connected" : "Online"}</Badge>
             </div>
           </CardHeader>
 
@@ -151,7 +160,7 @@ export function AgentPlayground() {
                 </section>
 
                 <section><p className="mb-3 text-sm font-medium">Recorded trace</p><div className="space-y-0">{run.steps.slice(0, visibleSteps).map((step, index) => <div key={step.order} className="relative flex gap-3 pb-5 last:pb-0"><div className="relative z-10 grid size-7 shrink-0 place-items-center rounded-full border border-border bg-card">{step.status === "skipped" ? <span className="text-xs text-muted-foreground">-</span> : step.name === "Selected tool" || step.name === "Accessed tool" ? <Wrench className="size-3.5" /> : <Check className="size-3.5" />}</div>{index < Math.min(visibleSteps, run.steps.length) - 1 ? <span className="absolute bottom-0 left-[13px] top-7 w-px bg-border" /> : null}<div className="min-w-0 pt-0.5"><div className="flex items-center gap-2"><p className="text-sm font-medium">{step.name}</p>{step.status === "skipped" ? <Badge variant="secondary">Skipped</Badge> : null}</div><p className="mt-1 break-words text-xs leading-5 text-muted-foreground">{step.summary}</p></div></div>)}</div></section>
-                <div className="border-t border-border pt-4 text-xs text-muted-foreground">Trace {run.traceId.slice(-8)} · backend {run.backendLatencyMs}ms · client round trip {run.roundTripMs}ms</div>
+                <div className="border-t border-border pt-4 text-xs text-muted-foreground">Trace {run.traceId.slice(-8)} · {run.provider ?? "deterministic"}/{run.model ?? "rules-v0.1"} · backend {run.backendLatencyMs}ms · client round trip {run.roundTripMs}ms</div>
               </div>
             ) : (
               <div className="grid min-h-[470px] place-items-center text-center"><div><span className="mx-auto grid size-12 place-items-center rounded-full border border-border bg-muted"><Activity className="size-5" /></span><p className="mt-4 text-sm font-medium">No trace yet</p><p className="mt-2 max-w-xs text-sm leading-6 text-muted-foreground">Choose a sample message or write your own question to inspect the agent execution.</p></div></div>

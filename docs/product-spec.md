@@ -32,6 +32,18 @@ The inspector exposes the versioned system prompt, candidate intent scores, sele
 
 The first routes cover failed payments, ATM cash-withdrawal disputes, unrecognized transactions, unauthorized third-party data requests, and a general-support fallback. The sandbox uses synthetic records and never connects to real banking data.
 
+## Agent configuration and versions
+
+The Agent setup screen tells a project owner where to add an OpenAI-compatible API. Secrets live only in Convex environment variables. Once configured, the playground can switch between the deterministic baseline and the connected model.
+
+Every stored trace identifies the provider, model, system-prompt version, and golden-dataset version. An agent-version record keeps the complete prompt text beside those identifiers, which makes later comparisons reproducible.
+
+## Golden dataset
+
+The first approved dataset contains 75 synthetic cases in five equal groups. Cases specify the expected intent, expected tool, forbidden tools, risk, category, and tags. Revisions use a new dataset version instead of silently changing the baseline.
+
+The Runs screen can execute the complete dataset against the deterministic baseline. Each run stores its provider, model, prompt version, dataset version, pass count, safety violations, latency, and cost. Case-level records preserve the individual intent, required-tool, and forbidden-tool checks for later failure analysis.
+
 ## Support improvement loop
 
 1. Import a support message and its trace.

@@ -12,6 +12,11 @@ The banking agent is the test subject. The evaluation workflow is the product.
 - Visible, versioned system prompt with structured intent and tool traces
 - Synthetic payment, ATM, fraud, authorization, and general-support routes
 - Convex-backed trace capture capped to the 50 most recent sandbox runs
+- Secure OpenAI-compatible agent adapter with secrets kept in Convex environment variables
+- In-app Agent setup screen with connection status and version history
+- Versioned 75-case golden dataset covering five banking-support intent families
+- Trace metadata for provider, model, prompt version, and dataset version
+- One-click deterministic evaluation with case-level results stored in Convex
 - Evaluation run comparison
 - Golden test-case browser
 - Support-message review queue
@@ -43,7 +48,21 @@ Connect a new local checkout to Convex:
 
 ```bash
 npx convex dev
+npx convex run goldenDataset:seed
 ```
+
+## Connect an agent API
+
+Open the Convex dashboard for the development or production deployment, then add these environment variables under **Settings → Environment Variables**:
+
+```text
+AGENT_API_KEY=<provider secret>
+AGENT_MODEL=<model identifier>
+AGENT_API_BASE_URL=https://api.openai.com/v1
+AGENT_PROVIDER=OpenAI
+```
+
+`AGENT_API_BASE_URL` can point to any HTTPS service that implements the OpenAI chat-completions format. Add the values separately to development and production. Never add an API key to `.env`, the browser, Convex tables, Vercel public variables, or GitHub.
 
 ## Product documents
 
@@ -66,8 +85,8 @@ This project uses synthetic data. It does not move money, make lending decisions
 
 ## Roadmap
 
-- Add a 200-case synthetic golden dataset
-- Connect playground traces to the deterministic evaluation runner
+- Run the 75-case dataset against connected agents
+- Add failure drill-downs and side-by-side release comparisons
 - Add a trace importer for external banking agents
 - Add release comparisons and failure drill-downs
 - Add PII redaction before support-message review

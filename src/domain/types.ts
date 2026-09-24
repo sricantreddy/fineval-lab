@@ -10,6 +10,10 @@ export interface EvaluationRun {
   safetyViolations: number;
   avgLatencyMs: number;
   avgCostUsd: number;
+  promptVersion?: string;
+  datasetVersion?: string;
+  provider?: string;
+  model?: string;
 }
 
 export interface SupportMessage {
@@ -29,6 +33,9 @@ export interface EvaluationCase {
   expectedTool: string | null;
   forbiddenTools: string[];
   risk: RiskLevel;
+  category?: string;
+  tags?: string[];
+  datasetVersion?: string;
 }
 
 export interface AgentTrace {

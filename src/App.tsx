@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
-import { Activity, ArrowRight, CheckCircle2, CircleDollarSign, Clock3, FlaskConical, Inbox, LayoutDashboard, ListChecks, MessageSquareText, Moon, ShieldCheck, Sparkles, Sun, TrendingUp } from "lucide-react";
+import { Activity, ArrowRight, CheckCircle2, CircleDollarSign, Clock3, FlaskConical, Inbox, KeyRound, LayoutDashboard, ListChecks, MessageSquareText, Moon, Play, ShieldCheck, Sparkles, Sun, TrendingUp } from "lucide-react";
 import { AgentPlayground } from "@/components/AgentPlayground";
+import { AgentSetup } from "@/components/AgentSetup";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,7 @@ import { passRate } from "@/domain/evaluator";
 import type { CandidateStatus, EvaluationCase, EvaluationRun, RiskLevel, SupportMessage } from "@/domain/types";
 import { cn } from "@/lib/utils";
 
-type View = "overview" | "playground" | "cases" | "support" | "runs";
+type View = "overview" | "playground" | "cases" | "support" | "runs" | "setup";
 type Theme = "dark" | "light";
 
 const navigation: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
@@ -20,6 +21,7 @@ const navigation: { id: View; label: string; icon: typeof LayoutDashboard }[] = 
   { id: "cases", label: "Test cases", icon: ListChecks },
   { id: "support", label: "Support feed", icon: Inbox },
   { id: "runs", label: "Runs", icon: Activity },
+  { id: "setup", label: "Agent setup", icon: KeyRound },
 ];
 
 const viewCopy: Record<Exclude<View, "overview">, { eyebrow: string; title: string; description: string }> = {
@@ -27,6 +29,7 @@ const viewCopy: Record<Exclude<View, "overview">, { eyebrow: string; title: stri
   playground: { eyebrow: "Agent sandbox", title: "Talk to the agent. Inspect every step.", description: "Run a synthetic support request and inspect its decision trace." },
   support: { eyebrow: "Product feedback loop", title: "Turn failures into permanent tests.", description: "Review recurring support patterns before adding them to the regression suite." },
   runs: { eyebrow: "Release history", title: "See what changed between versions.", description: "Compare correctness, safety, latency, and cost before an agent reaches customers." },
+  setup: { eyebrow: "Agent configuration", title: "Connect the model. Keep the key private.", description: "Configure an OpenAI-compatible agent API and inspect the versions used in evaluation." },
 };
 
 function riskVariant(risk: RiskLevel) {
@@ -55,8 +58,12 @@ export function App() {
     safetyViolations: run.safetyViolations,
     avgLatencyMs: run.avgLatencyMs,
     avgCostUsd: run.avgCostUsd,
+    promptVersion: run.promptVersion,
+    datasetVersion: run.datasetVersion,
+    provider: run.provider,
+    model: run.model,
   }));
-  const cases: EvaluationCase[] = (caseDocuments ?? []).map((testCase) => ({ id: testCase.caseId, name: testCase.name, message: testCase.message, expectedIntent: testCase.expectedIntent, expectedTool: testCase.expectedTool, forbiddenTools: testCase.forbiddenTools, risk: testCase.risk }));
+  const cases: EvaluationCase[] = (caseDocuments ?? []).map((testCase) => ({ id: testCase.caseId, name: testCase.name, message: testCase.message, expectedIntent: testCase.expectedIntent, expectedTool: testCase.expectedTool, forbiddenTools: testCase.forbiddenTools, risk: testCase.risk, category: testCase.category, tags: testCase.tags, datasetVersion: testCase.datasetVersion }));
   const isLoading = supportDocuments === undefined || runDocuments === undefined || caseDocuments === undefined;
   const latestRun = runs[0] ?? { id: "loading", version: "Loading", createdAt: "", totalCases: 0, passedCases: 0, safetyViolations: 0, avgLatencyMs: 0, avgCostUsd: 0 };
   const candidateCount = messages.filter((message) => message.status !== "promoted").length;
@@ -118,7 +125,7 @@ export function App() {
       </header>
 
       <main className="mx-auto max-w-[1440px] px-5 pb-20 pt-10 lg:px-8 lg:pt-16">
-        {view === "overview" ? <Overview metrics={metrics} messages={messages} runs={runs} latestRun={latestRun} onPromote={promoteMessage} onNavigate={setView} /> : view === "playground" ? <AgentPlayground /> : <><PageIntro {...viewCopy[view]} />{view === "support" ? <SupportFeed messages={messages} onPromote={promoteMessage} /> : view === "cases" ? <Cases cases={cases} /> : <Runs runs={runs} />}</>}
+        {view === "overview" ? <Overview metrics={metrics} messages={messages} runs={runs} latestRun={latestRun} onPromote={promoteMessage} onNavigate={setView} /> : view === "playground" ? <AgentPlayground /> : <><PageIntro {...viewCopy[view]} />{view === "support" ? <SupportFeed messages={messages} onPromote={promoteMessage} /> : view === "cases" ? <Cases cases={cases} /> : view === "setup" ? <AgentSetup /> : <Runs runs={runs} />}</>}
       </main>
     </div>
   );
@@ -163,14 +170,23 @@ function SupportRow({ message, onPromote }: { message: SupportMessage; onPromote
 }
 
 function Cases({ cases }: { cases: EvaluationCase[] }) {
-  return <Card><CardHeader><CardTitle>Golden test suite</CardTitle><CardDescription>{cases.length} approved cases. The first milestone expands this to 200.</CardDescription></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="border-b border-border text-[10px] uppercase tracking-[0.14em] text-muted-foreground"><tr><th className="pb-3 font-medium">Case</th><th className="pb-3 font-medium">Expected intent</th><th className="pb-3 font-medium">Expected tool</th><th className="pb-3 font-medium">Risk</th></tr></thead><tbody>{cases.map((item) => <tr key={item.id} className="border-b border-border last:border-0"><td className="py-5"><p className="font-medium">{item.name}</p><p className="mt-1 max-w-md text-xs leading-5 text-muted-foreground">{item.message}</p></td><td className="py-5 font-mono text-xs text-muted-foreground">{item.expectedIntent}</td><td className="py-5 font-mono text-xs text-muted-foreground">{item.expectedTool ?? "No tool call"}</td><td className="py-5"><Badge variant={riskVariant(item.risk)}>{item.risk}</Badge></td></tr>)}</tbody></table></CardContent></Card>;
+  const version = cases.find((item) => item.datasetVersion)?.datasetVersion ?? "Unversioned";
+  const versionedCount = cases.filter((item) => item.datasetVersion === version).length;
+  const supportCount = cases.length - versionedCount;
+  return <Card><CardHeader className="flex-row items-start justify-between gap-5"><div><CardTitle>Golden test suite</CardTitle><CardDescription>{versionedCount} versioned synthetic cases{supportCount > 0 ? ` · ${supportCount} support-derived case${supportCount === 1 ? "" : "s"}` : ""}.</CardDescription></div><Badge variant="secondary">{version}</Badge></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="border-b border-border text-[10px] uppercase tracking-[0.14em] text-muted-foreground"><tr><th className="pb-3 font-medium">Case</th><th className="pb-3 font-medium">Category</th><th className="pb-3 font-medium">Expected intent</th><th className="pb-3 font-medium">Expected tool</th><th className="pb-3 font-medium">Risk</th></tr></thead><tbody>{cases.map((item) => <tr key={item.id} className="border-b border-border last:border-0"><td className="py-5"><p className="font-medium">{item.name}</p><p className="mt-1 max-w-md text-xs leading-5 text-muted-foreground">{item.message}</p></td><td className="py-5 text-xs text-muted-foreground">{item.category ?? "Support-derived"}</td><td className="py-5 font-mono text-xs text-muted-foreground">{item.expectedIntent}</td><td className="py-5 font-mono text-xs text-muted-foreground">{item.expectedTool ?? "No tool call"}</td><td className="py-5"><Badge variant={riskVariant(item.risk)}>{item.risk}</Badge></td></tr>)}</tbody></table></CardContent></Card>;
 }
 
 function RunTable({ runs, compact = false }: { runs: EvaluationRun[]; compact?: boolean }) {
-  return <Card><CardHeader><CardTitle>Recent runs</CardTitle><CardDescription>Results for the latest agent versions.</CardDescription></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[560px] text-left text-sm"><thead className="border-b border-border text-[10px] uppercase tracking-[0.14em] text-muted-foreground"><tr><th className="pb-3 font-medium">Version</th><th className="pb-3 font-medium">Pass rate</th><th className="pb-3 font-medium">Safety</th><th className="pb-3 font-medium">Latency</th>{!compact ? <th className="pb-3 font-medium">Cost</th> : null}</tr></thead><tbody>{runs.map((run) => <tr key={run.id} className="border-b border-border last:border-0"><td className="py-5"><p className="font-medium">{run.version}</p><p className="mt-1 text-xs text-muted-foreground">{run.createdAt}</p></td><td className="py-5 font-medium">{passRate(run)}%</td><td className="py-5"><Badge variant={run.safetyViolations === 0 ? "success" : "danger"}>{run.safetyViolations === 0 ? "Passed" : `${run.safetyViolations} failed`}</Badge></td><td className="py-5 text-muted-foreground">{(run.avgLatencyMs / 1000).toFixed(2)}s</td>{!compact ? <td className="py-5 text-muted-foreground">${run.avgCostUsd.toFixed(3)}</td> : null}</tr>)}</tbody></table></CardContent></Card>;
+  return <Card><CardHeader><CardTitle>Recent runs</CardTitle><CardDescription>Results for the latest agent versions.</CardDescription></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[560px] text-left text-sm"><thead className="border-b border-border text-[10px] uppercase tracking-[0.14em] text-muted-foreground"><tr><th className="pb-3 font-medium">Version</th><th className="pb-3 font-medium">Pass rate</th><th className="pb-3 font-medium">Safety</th><th className="pb-3 font-medium">Latency</th>{!compact ? <th className="pb-3 font-medium">Cost</th> : null}</tr></thead><tbody>{runs.map((run) => <tr key={run.id} className="border-b border-border last:border-0"><td className="py-5"><p className="font-medium">{run.version}</p>{run.provider || run.datasetVersion ? <p className="mt-1 text-[11px] text-muted-foreground">{run.provider ?? "Untracked"}/{run.model ?? "unknown"} · {run.promptVersion ?? "prompt untracked"} · {run.datasetVersion ?? "dataset untracked"}</p> : null}<p className="mt-1 text-xs text-muted-foreground">{run.createdAt}</p></td><td className="py-5 font-medium">{passRate(run)}%</td><td className="py-5"><Badge variant={run.safetyViolations === 0 ? "success" : "danger"}>{run.safetyViolations === 0 ? "Passed" : `${run.safetyViolations} failed`}</Badge></td><td className="py-5 text-muted-foreground">{(run.avgLatencyMs / 1000).toFixed(2)}s</td>{!compact ? <td className="py-5 text-muted-foreground">${run.avgCostUsd.toFixed(3)}</td> : null}</tr>)}</tbody></table></CardContent></Card>;
 }
 
 function Runs({ runs }: { runs: EvaluationRun[] }) {
+  const runGoldenSuite = useMutation(api.evaluationSuite.runSynthetic);
+  const [running, setRunning] = useState(false);
   const latestRun = runs[0];
-  return <div className="space-y-5"><RunTable runs={runs} /><div className="grid gap-5 md:grid-cols-2"><Card><CardContent className="flex items-center gap-4 pt-5"><span className="rounded-full border border-border bg-muted p-3 text-foreground/80"><CircleDollarSign className="size-5" /></span><div><p className="text-sm text-muted-foreground">Estimated latest run cost</p><p className="text-xl font-semibold">${latestRun ? (latestRun.avgCostUsd * latestRun.totalCases).toFixed(2) : "0.00"}</p></div></CardContent></Card><Card><CardContent className="flex items-center gap-4 pt-5"><span className="rounded-full border border-border bg-muted p-3 text-foreground/80"><ShieldCheck className="size-5" /></span><div><p className="text-sm text-muted-foreground">High-risk cases passed</p><p className="text-xl font-semibold">100%</p></div></CardContent></Card></div></div>;
+  async function startRun() {
+    setRunning(true);
+    try { await runGoldenSuite({}); } finally { setRunning(false); }
+  }
+  return <div className="space-y-5"><Card><CardContent className="flex flex-col justify-between gap-5 pt-5 sm:flex-row sm:items-center"><div><p className="text-sm font-medium">Golden-suite evaluation</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Run all 75 versioned cases against the deterministic baseline.</p></div><Button onClick={startRun} disabled={running}>{running ? "Running 75 cases" : "Run golden suite"}<Play className="size-3.5" /></Button></CardContent></Card><RunTable runs={runs} /><div className="grid gap-5 md:grid-cols-2"><Card><CardContent className="flex items-center gap-4 pt-5"><span className="rounded-full border border-border bg-muted p-3 text-foreground/80"><CircleDollarSign className="size-5" /></span><div><p className="text-sm text-muted-foreground">Estimated latest run cost</p><p className="text-xl font-semibold">${latestRun ? (latestRun.avgCostUsd * latestRun.totalCases).toFixed(2) : "0.00"}</p></div></CardContent></Card><Card><CardContent className="flex items-center gap-4 pt-5"><span className="rounded-full border border-border bg-muted p-3 text-foreground/80"><ShieldCheck className="size-5" /></span><div><p className="text-sm text-muted-foreground">Latest safety violations</p><p className="text-xl font-semibold">{latestRun?.safetyViolations ?? 0}</p></div></CardContent></Card></div></div>;
 }
