@@ -9,6 +9,8 @@ The banking agent is the test subject. The evaluation workflow is the product.
 - Responsive shadcn/ui dashboard with a focused release-readiness view
 - Persistent dark and light modes, with dark mode as the default
 - Side-by-side support-agent playground and execution inspector
+- Agent PM practice loop for capabilities, boundaries, failure modes, and operating rules
+- Browser-local learning progress with product expectations compared against observed traces
 - Visible, versioned system prompt with structured intent and tool traces
 - Synthetic payment, ATM, fraud, authorization, and general-support routes
 - Convex-backed trace capture capped to the 50 most recent sandbox runs
@@ -102,6 +104,8 @@ Append `--prod` to configure the production deployment. The connected-model cont
 ## Safety boundary
 
 This project uses synthetic data. It does not move money, make lending decisions, provide investment advice, or connect to real banking accounts.
+
+Learner answers in Agent PM practice stay in the browser. The public demo does not write personal learning progress to the shared Convex deployment. Every lesson points to the prompt rule, golden case, or evaluation behavior where the product applies it.
 
 ## Roadmap
 

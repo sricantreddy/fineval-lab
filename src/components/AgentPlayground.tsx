@@ -2,6 +2,8 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Activity, Bot, Check, Cpu, FileCode2, Send, UserRound, Wrench } from "lucide-react";
 import { api } from "../../convex/_generated/api";
+import { AgentPmCoach } from "@/components/AgentPmCoach";
+import type { AgentPmChallenge } from "@/domain/agentPmCoach";
 import { AGENT_SYSTEM_PROMPT, type SyntheticAgentRun } from "@/domain/syntheticAgent";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,9 +58,8 @@ export function AgentPlayground() {
     return () => window.clearInterval(timer);
   }, [run]);
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    const message = input.trim();
+  async function executeMessage(rawMessage: string) {
+    const message = rawMessage.trim();
     if (!message || pending) return;
 
     setInput("");
@@ -86,6 +87,16 @@ export function AgentPlayground() {
     }
   }
 
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    await executeMessage(input);
+  }
+
+  function runCoachChallenge(challenge: AgentPmChallenge) {
+    setInput(challenge.message);
+    void executeMessage(challenge.message);
+  }
+
   return (
     <div className="space-y-8">
       <section className="max-w-3xl">
@@ -97,6 +108,8 @@ export function AgentPlayground() {
           <button disabled={!providerStatus?.configured} onClick={() => setExecutionMode("connected")} className={cn("flex items-center gap-2 rounded-full px-3 py-1.5 text-xs", executionMode === "connected" ? "bg-primary text-primary-foreground" : "text-muted-foreground", !providerStatus?.configured && "cursor-not-allowed opacity-45")} title={providerStatus?.configured ? "Use the connected model" : "This deployment has no connected model"}><Cpu className="size-3.5" />Connected model</button>
         </div>
       </section>
+
+      <AgentPmCoach run={run} onRunChallenge={runCoachChallenge} pending={pending} />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.9fr)]">
         <Card className="flex min-h-[720px] flex-col overflow-hidden">
