@@ -7,6 +7,7 @@ import { AGENT_SYSTEM_PROMPT } from "../src/domain/syntheticAgent";
 import { buildConnectedRun, normalizeModelDecision, toolResultForDecision } from "../src/domain/connectedAgent";
 import { GOLDEN_DATASET_VERSION } from "../src/domain/goldenDataset";
 import type { SyntheticAgentRun } from "../src/domain/syntheticAgent";
+import { configuredModels, selectConfiguredModel } from "../src/domain/providerConfig";
 
 export const run = mutation({
   args: { message: v.string() },
@@ -43,14 +44,15 @@ export const run = mutation({
   },
 });
 
-function configuredProvider() {
+function configuredProvider(requestedModel?: string) {
   const apiKey = process.env.AGENT_API_KEY;
   const baseUrl = process.env.AGENT_API_BASE_URL ?? "https://api.openai.com/v1";
-  const model = process.env.AGENT_MODEL;
+  const models = configuredModels(process.env.AGENT_MODEL, process.env.AGENT_MODELS);
   const provider = process.env.AGENT_PROVIDER ?? "OpenAI-compatible";
-  if (!apiKey || !model) throw new Error("Connected agent is not configured. Add AGENT_API_KEY and AGENT_MODEL in Convex environment variables.");
+  if (!apiKey || models.length === 0) throw new Error("Connected agent is not configured. Add AGENT_API_KEY and AGENT_MODEL in Convex environment variables.");
   const parsedUrl = new URL(baseUrl);
   if (parsedUrl.protocol !== "https:") throw new Error("AGENT_API_BASE_URL must use HTTPS.");
+  const model = selectConfiguredModel(models, requestedModel);
   return { apiKey, baseUrl: baseUrl.replace(/\/$/, ""), model, provider };
 }
 
@@ -80,12 +82,12 @@ async function requestCompletion(
 }
 
 export const runConnected = action({
-  args: { message: v.string() },
+  args: { message: v.string(), model: v.optional(v.string()) },
   handler: async (ctx, args): Promise<SyntheticAgentRun & { traceId: Id<"agentTraces"> }> => {
     const message = args.message.trim();
     if (message.length < 3) throw new Error("Enter a support question with at least 3 characters.");
     if (message.length > 500) throw new Error("Keep the support question under 500 characters.");
-    const config = configuredProvider();
+    const config = configuredProvider(args.model);
     const startedAt = Date.now();
 
     const decisionContent = await requestCompletion(config, [

@@ -2,8 +2,6 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Activity, Bot, Check, Cpu, FileCode2, Send, UserRound, Wrench } from "lucide-react";
 import { api } from "../../convex/_generated/api";
-import { AgentPmCoach } from "@/components/AgentPmCoach";
-import type { AgentPmChallenge } from "@/domain/agentPmCoach";
 import { AGENT_SYSTEM_PROMPT, type SyntheticAgentRun } from "@/domain/syntheticAgent";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,6 +35,7 @@ export function AgentPlayground() {
   const [inspector, setInspector] = useState<"trace" | "prompt">("trace");
   const [visibleSteps, setVisibleSteps] = useState(0);
   const [executionMode, setExecutionMode] = useState<"synthetic" | "connected">("synthetic");
+  const [selectedModel, setSelectedModel] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,8 +57,14 @@ export function AgentPlayground() {
     return () => window.clearInterval(timer);
   }, [run]);
 
-  async function executeMessage(rawMessage: string) {
-    const message = rawMessage.trim();
+  useEffect(() => {
+    const models = providerStatus?.models ?? [];
+    if (models.length > 0 && !models.includes(selectedModel)) setSelectedModel(models[0]);
+  }, [providerStatus, selectedModel]);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    const message = input.trim();
     if (!message || pending) return;
 
     setInput("");
@@ -71,7 +76,7 @@ export function AgentPlayground() {
 
     try {
       const result = executionMode === "connected"
-        ? await runConnectedAgent({ message })
+        ? await runConnectedAgent({ message, model: selectedModel || undefined })
         : await runAgent({ message });
       const nextRun: PlaygroundRun = {
         ...result,
@@ -87,16 +92,6 @@ export function AgentPlayground() {
     }
   }
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    await executeMessage(input);
-  }
-
-  function runCoachChallenge(challenge: AgentPmChallenge) {
-    setInput(challenge.message);
-    void executeMessage(challenge.message);
-  }
-
   return (
     <div className="space-y-8">
       <section className="max-w-3xl">
@@ -107,9 +102,8 @@ export function AgentPlayground() {
           <button onClick={() => setExecutionMode("synthetic")} className={cn("flex items-center gap-2 rounded-full px-3 py-1.5 text-xs", executionMode === "synthetic" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}><Activity className="size-3.5" />Synthetic rules</button>
           <button disabled={!providerStatus?.configured} onClick={() => setExecutionMode("connected")} className={cn("flex items-center gap-2 rounded-full px-3 py-1.5 text-xs", executionMode === "connected" ? "bg-primary text-primary-foreground" : "text-muted-foreground", !providerStatus?.configured && "cursor-not-allowed opacity-45")} title={providerStatus?.configured ? "Use the connected model" : "This deployment has no connected model"}><Cpu className="size-3.5" />Connected model</button>
         </div>
+        {executionMode === "connected" && providerStatus?.configured ? <label className="mt-4 block max-w-md text-xs text-muted-foreground">Model<select value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)} className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring">{providerStatus.models.map((model) => <option key={model} value={model}>{model}</option>)}</select><span className="mt-2 block">Available through {providerStatus.provider}. The deployment owner controls this allowlist.</span></label> : null}
       </section>
-
-      <AgentPmCoach run={run} onRunChallenge={runCoachChallenge} pending={pending} />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.9fr)]">
         <Card className="flex min-h-[720px] flex-col overflow-hidden">

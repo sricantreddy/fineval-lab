@@ -9,8 +9,6 @@ The banking agent is the test subject. The evaluation workflow is the product.
 - Responsive shadcn/ui dashboard with a focused release-readiness view
 - Persistent dark and light modes, with dark mode as the default
 - Side-by-side support-agent playground and execution inspector
-- Agent PM practice loop for capabilities, boundaries, failure modes, and operating rules
-- Browser-local learning progress with product expectations compared against observed traces
 - Visible, versioned system prompt with structured intent and tool traces
 - Synthetic payment, ATM, fraud, authorization, and general-support routes
 - Convex-backed trace capture capped to the 50 most recent sandbox runs
@@ -61,11 +59,14 @@ Set these variables through the Convex CLI or in the private Convex dashboard un
 ```text
 AGENT_API_KEY=<provider secret>
 AGENT_MODEL=<model identifier>
+AGENT_MODELS=<optional comma-separated model allowlist>
 AGENT_API_BASE_URL=https://api.openai.com/v1
 AGENT_PROVIDER=OpenAI
 ```
 
 `AGENT_API_BASE_URL` can point to any HTTPS service that implements the OpenAI chat-completions format. Add the values separately to development and production. Never add an API key to `.env`, the browser, Convex tables, Vercel public variables, or GitHub.
+
+`AGENT_MODEL` is the default. Add `AGENT_MODELS` when visitors should be able to switch between several owner-approved models. The Convex action rejects model identifiers outside this list, so a browser cannot submit an arbitrary expensive model.
 
 For a Gemini key created in Google AI Studio, use:
 
@@ -75,11 +76,23 @@ AGENT_PROVIDER=Google AI Studio
 AGENT_MODEL=<the Gemini model selected by the repository owner>
 ```
 
+For OpenRouter, use its OpenAI-compatible endpoint:
+
+```text
+AGENT_API_BASE_URL=https://openrouter.ai/api/v1
+AGENT_PROVIDER=OpenRouter
+AGENT_MODEL=<default OpenRouter model slug>
+AGENT_MODELS=<comma-separated OpenRouter model slugs visitors may select>
+```
+
+Use an OpenRouter key with a spending limit and keep the public allowlist small. A public playground sends requests through the project owner's account even though the key never reaches the browser.
+
 Set a secret interactively so it does not appear in shell history:
 
 ```bash
 npx convex env set AGENT_API_KEY
 npx convex env set AGENT_MODEL
+npx convex env set AGENT_MODELS
 npx convex env set AGENT_API_BASE_URL
 npx convex env set AGENT_PROVIDER
 ```
@@ -104,8 +117,6 @@ Append `--prod` to configure the production deployment. The connected-model cont
 ## Safety boundary
 
 This project uses synthetic data. It does not move money, make lending decisions, provide investment advice, or connect to real banking accounts.
-
-Learner answers in Agent PM practice stay in the browser. The public demo does not write personal learning progress to the shared Convex deployment. Every lesson points to the prompt rule, golden case, or evaluation behavior where the product applies it.
 
 ## Roadmap
 
